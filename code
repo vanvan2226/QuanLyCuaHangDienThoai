@@ -1,0 +1,172 @@
+import java.util.*;
+
+// =============================
+// 1. Interface + Abstract class
+// =============================
+interface HienThi {
+    void hienThi();
+}
+
+abstract class SanPham implements HienThi {
+    protected String ma, ten;
+    protected double gia;
+    protected int tonKho;
+
+    public SanPham(String ma, String ten, double gia, int tonKho) {
+        this.ma = ma; this.ten = ten;
+        this.gia = gia; this.tonKho = tonKho;
+    }
+
+    public String getMa() { return ma; }
+    public double getGia() { return gia; }
+    public int getTonKho() { return tonKho; }
+    public void setTonKho(int t) { tonKho = t; }
+
+    public abstract String getLoai();
+
+    @Override
+    public void hienThi() {
+        System.out.println(
+            getLoai() + " | Mã: " + ma + 
+            " | Tên: " + ten + 
+            " | Giá: " + gia + 
+            " | Tồn kho: " + tonKho
+        );
+    }
+}
+
+// =============================
+// 2. Kế thừa: Điện thoại & Phụ kiện
+// =============================
+class DienThoai extends SanPham {
+    public DienThoai(String ma, String ten, double gia, int tonKho) {
+        super(ma, ten, gia, tonKho);
+    }
+    @Override
+    public String getLoai() { return "ĐIỆN THOẠI"; }
+}
+
+class PhuKien extends SanPham {
+    public PhuKien(String ma, String ten, double gia, int tonKho) {
+        super(ma, ten, gia, tonKho);
+    }
+    @Override
+    public String getLoai() { return "PHỤ KIỆN"; }
+}
+
+// =============================
+// 3. Generic Repository
+// =============================
+class KhoDuLieu<T> {
+    private TreeMap<String, T> data = new TreeMap<>();
+
+    public void them(String key, T val) { data.put(key, val); }
+    public T get(String key) { return data.get(key); }
+    public boolean tonTai(String key) { return data.containsKey(key); }
+    public Collection<T> danhSach() { return data.values(); }
+}
+
+// =============================
+// 4. Khách hàng
+// =============================
+class KhachHang implements HienThi {
+    private String ma, ten;
+
+    public KhachHang(String ma, String ten) {
+        this.ma = ma; this.ten = ten;
+    }
+
+    @Override
+    public void hienThi() {
+        System.out.println("KHÁCH HÀNG | Mã: " + ma + " | Tên: " + ten);
+    }
+}
+
+// =============================
+// 5. Hóa đơn
+// =============================
+class HoaDon implements HienThi {
+    private String maHD;
+    private KhachHang khach;
+    private ArrayList<SanPham> dsSP = new ArrayList<>();
+
+    public HoaDon(String maHD, KhachHang khach) {
+        this.maHD = maHD;
+        this.khach = khach;
+    }
+
+    public void themSP(SanPham sp) {
+        dsSP.add(sp);
+    }
+
+    public double tongTien() {
+        double sum = 0;
+        for (SanPham sp : dsSP) sum += sp.getGia();
+        return sum;
+    }
+
+    @Override
+    public void hienThi() {
+        System.out.println("HÓA ĐƠN " + maHD + " | Khách: " + khach);
+        System.out.println("Số SP: " + dsSP.size() + " | Tổng tiền: " + tongTien());
+    }
+}
+
+// =============================
+// 6. CHƯƠNG TRÌNH DEMO
+// =============================
+public class Main {
+    public static void main(String[] args) {
+
+        try {
+            // Tạo kho dữ liệu
+            KhoDuLieu<SanPham> khoSP = new KhoDuLieu<>();
+            KhoDuLieu<KhachHang> khoKH = new KhoDuLieu<>();
+            KhoDuLieu<HoaDon> khoHD = new KhoDuLieu<>();
+
+            // ===== Thêm sản phẩm mẫu =====
+            khoSP.them("SP01", new DienThoai("SP01", "iPhone 12", 20000, 5));
+            khoSP.them("SP02", new DienThoai("SP02", "Samsung S23", 18000, 3));
+            khoSP.them("PK01", new PhuKien("PK01", "Sạc nhanh 20W", 350, 20));
+            khoSP.them("PK02", new PhuKien("PK02", "Tai nghe Bluetooth", 500, 15));
+
+            // ===== Thêm khách hàng =====
+            khoKH.them("KH01", new KhachHang("KH01", "Nguyễn Văn A"));
+            khoKH.them("KH02", new KhachHang("KH02", "Trần Thị B"));
+
+            // ===== Tạo hóa đơn =====
+            HoaDon hd = new HoaDon("HD01", khoKH.get("KH01"));
+            hd.themSP(khoSP.get("SP01"));
+            hd.themSP(khoSP.get("PK02"));
+            khoHD.them("HD01", hd);
+
+            // =============================
+            //          TRÌNH DIỄN
+            // =============================
+            System.out.println("\n===== DANH SÁCH SẢN PHẨM =====");
+            for (SanPham sp : khoSP.danhSach()) sp.hienThi();
+
+            System.out.println("\n===== SẮP XẾP GIÁ GIẢM DẦN =====");
+            ArrayList<SanPham> sapXep = new ArrayList<>(khoSP.danhSach());
+            sapXep.sort((a,b)-> Double.compare(b.getGia(), a.getGia()));
+            for (SanPham sp : sapXep) sp.hienThi();
+
+            System.out.println("\n===== TÌM KIẾM: chứa 'iphone' =====");
+            for (SanPham sp : khoSP.danhSach()) {
+                if (sp.ten.toLowerCase().contains("iphone"))
+                    sp.hienThi();
+            }
+
+            System.out.println("\n===== THỐNG KÊ TỒN KHO =====");
+            int tongTon = 0;
+            for (SanPham sp : khoSP.danhSach()) tongTon += sp.getTonKho();
+            System.out.println("Tổng tồn kho: " + tongTon);
+
+            System.out.println("\n===== HÓA ĐƠN =====");
+            for (HoaDon hoadon : khoHD.danhSach()) hoadon.hienThi();
+
+        } catch (Exception e) {
+            System.out.println("LỖI: " + e.getMessage());
+        }
+    }
+}
